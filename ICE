@@ -1,0 +1,193 @@
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+-- Variables
+local targetName = ""
+local isTrolling = false
+local glitchIntensity = 5
+local lastCheckpoint = nil
+local loopConnection
+local startTime = os.time()
+local antiAfkEnabled = false
+local viewingPlayer = false
+local midBangThread = nil -- To track the timed notification
+
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Create Window
+local Window = Rayfield:CreateWindow({
+   Name = "❄️ ICE ❄️",
+   LoadingTitle = "Script ICE",
+   LoadingSubtitle = "Mar7ba Fi Scripty",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = false,
+   Theme = "Default" 
+})
+
+-------------------------------------------------------------------
+-- TAB 1: TROLL HUB
+-------------------------------------------------------------------
+local MainTab = Window:CreateTab("Taf3il", 4483362458)
+
+local function getTargetPlayer()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if string.lower(string.sub(player.Name, 1, #targetName)) == string.lower(targetName) then
+                return player
+            end
+        end
+    end
+    return nil
+end
+
+MainTab:CreateInput({
+   Name = "7ot ismo hna",
+   PlaceholderText = "hna",
+   Callback = function(Text) targetName = Text end,
+})
+
+MainTab:CreateSlider({
+   Name = "Sor3a",
+   Range = {16, 250},
+   Increment = 1,
+   CurrentValue = 16,
+   Callback = function(V) 
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then 
+          LocalPlayer.Character.Humanoid.WalkSpeed = V 
+      end 
+   end,
+})
+
+MainTab:CreateSlider({
+   Name = "Tangiz",
+   Range = {50, 500},
+   Increment = 1,
+   CurrentValue = 50,
+   Callback = function(V) 
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then 
+          LocalPlayer.Character.Humanoid.UseJumpPower = true 
+          LocalPlayer.Character.Humanoid.JumpPower = V 
+      end 
+   end,
+})
+
+MainTab:CreateSlider({
+   Name = "El 9owa mta3 El BANG",
+   Range = {1, 50},
+   Increment = 1,
+   CurrentValue = 5,
+   Callback = function(V) glitchIntensity = V end,
+})
+
+MainTab:CreateToggle({
+   Name = "choufo",
+   CurrentValue = false,
+   Callback = function(Value)
+      viewingPlayer = Value
+      local cam = Workspace.CurrentCamera
+      if viewingPlayer then
+          local target = getTargetPlayer()
+          if target and target.Character and target.Character:FindFirstChild("Humanoid") then
+              cam.CameraSubject = target.Character.Humanoid
+          end
+      else
+          if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+              cam.CameraSubject = LocalPlayer.Character.Humanoid
+          end
+      end
+   end,
+})
+
+MainTab:CreateToggle({
+   Name = "fa3l 3lih",
+   CurrentValue = false,
+   Callback = function(Value)
+      isTrolling = Value
+      local char = LocalPlayer.Character
+      local root = char and char:FindFirstChild("HumanoidRootPart")
+      local hum = char and char:FindFirstChild("Humanoid")
+      local target = getTargetPlayer()
+
+      if isTrolling then
+          -- Start Notification
+          Rayfield:Notify({Title = "ICE V1", Content = "NIKLO OMO", Duration = 3})
+          
+          if root then lastCheckpoint = root.CFrame end
+          if hum then hum.Sit = true end
+          
+          -- Mid-Bang Notification Timer (between 1 and 3 minutes)
+          midBangThread = task.delay(math.random(60, 180), function()
+              if isTrolling then
+                  Rayfield:Notify({Title = "ICE V1", Content = "Mat5rjch Rak rajel", Duration = 4})
+              end
+          end)
+          
+          loopConnection = RunService.Heartbeat:Connect(function()
+              if not isTrolling then return end
+              local currentTarget = getTargetPlayer()
+              
+              -- Player Left logic
+              if not currentTarget then
+                  isTrolling = false
+                  if loopConnection then loopConnection:Disconnect() end
+                  if root and lastCheckpoint then root.CFrame = lastCheckpoint end
+                  Rayfield:Notify({Title = "Target Left", Content = "Haw 5raj Mala 9ahba", Duration = 5})
+                  return
+              end
+
+              if currentTarget.Character and currentTarget.Character:FindFirstChild("Head") and root then
+                  local offset = currentTarget.Character.Head.CFrame * CFrame.new(0, 0, -1.2) 
+                  local randomRotate = CFrame.Angles(math.rad(math.random(-glitchIntensity*10, glitchIntensity*10)), math.rad(math.random(-glitchIntensity*10, glitchIntensity*10)), 0)
+                  root.CFrame = offset * randomRotate
+                  if hum and not hum.Sit then hum.Sit = true end
+              end
+          end)
+      else
+          -- Toggled Off manually
+          if loopConnection then loopConnection:Disconnect() end
+          if midBangThread then task.cancel(midBangThread) end -- Cancel the timer if turned off early
+          
+          -- Check if player is still there
+          if target then
+              Rayfield:Notify({Title = "ICE V1", Content = "ya 5awaf 3leh 9asit 3lih?", Duration = 4})
+          end
+          
+          if root and lastCheckpoint then root.CFrame = lastCheckpoint end
+          if hum then hum.Sit = false end
+      end
+   end,
+})
+
+-------------------------------------------------------------------
+-- TAB 2: PLAYER INFO
+-------------------------------------------------------------------
+local InfoTab = Window:CreateTab("Player Info", 4483362458)
+local UserLabel = InfoTab:CreateLabel("User: " .. LocalPlayer.Name)
+local ServerLabel = InfoTab:CreateLabel("Players: " .. #Players:GetPlayers())
+local UptimeLabel = InfoTab:CreateLabel("Uptime: 0s")
+
+task.spawn(function()
+    while task.wait(1) do
+        ServerLabel:Set("Players: " .. #Players:GetPlayers())
+        UptimeLabel:Set("Uptime: " .. math.floor(os.time() - startTime) .. "s")
+    end
+end)
+
+InfoTab:CreateToggle({
+   Name = "Anti-AFK",
+   CurrentValue = false,
+   Callback = function(V) antiAfkEnabled = V end,
+})
+
+LocalPlayer.Idled:Connect(function()
+    if antiAfkEnabled then
+        VirtualUser:Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+    end
+end)
