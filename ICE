@@ -1,282 +1,302 @@
--- SAFETY CHECK: Ensure the script actually starts
-print("ICE V1 BANG: Initializing...")
+--[[
+    A҉V҉8҉ v2.3 - ZODIAK HUB ULTIMATE (VOID CONTROL & TARGET FIX)
+    - Whitelist: ICE (4728172481), Youssef (4945789998), Founder (10266393139)
+    - Target Notification: "he4a"
+    - Anti-Void: Control mode (ON = Stay in Void / OFF = Return to ground)
+    - Music: 10x 8oneya Buttons + Brazil
+]]
 
--- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
 local Workspace = game:GetService("Workspace")
-local TextChatService = game:GetService("TextChatService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Lighting = game:GetService("Lighting")
-local LocalPlayer = Players.LocalPlayer
+local TextChatService = game:GetService("TextChatService")
+local lp = Players.LocalPlayer
 
--- Variables
-local targetName = ""
-local isTrolling = false
-local flingEnabled = false
-local glitchIntensity = 5
-local lastCheckpoint = nil
-local loopConnection
-local startTime = os.time() -- FIXED TYPO HERE
-local midBangThread = nil 
+-- ═══════════════════════════════════════
+-- Global Variables & State
+-- ═══════════════════════════════════════
+local bangTarget = nil
+local mode1Enabled, mode2Enabled, isTrolling = false, false, false
+local lastCheckpoint = CFrame.new(0, 50, 0) 
+local startTime = os.time()
 
--- Defense Variables
-local antiAfkEnabled = false
-local viewingPlayer = false
-local antiVoidPart = nil
-local antiFlingConnection = nil
-local antiSitConnection = nil
-local antiBangCheckpoint = nil
+local antiBangActive = false
+local antiFlingActive = false
+local antiVoidActive = false 
+local antiAfkActive = false
 
--- Load Rayfield UI with Error Handling
-local success, Rayfield = pcall(function()
-    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- ═══════════════════════════════════════
+-- Whitelist & Chat Spam
+-- ═══════════════════════════════════════
+local spamMessage = "CLAN ZODIAK JOINED THE SERVER ✅"
+if lp.UserId == 4728172481 then spamMessage = "ICE HAS JOINED THE SERVER ❄" end
+
+task.spawn(function()
+    for i = 1, 7 do
+        pcall(function()
+            if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                local channel = TextChatService.TextChannels.RBXGeneral
+                if channel then channel:SendAsync(spamMessage) end
+            else
+                local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+                if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+                    chatEvent.SayMessageRequest:FireServer(spamMessage, "All")
+                end
+            end
+        end)
+        task.wait(0.1)
+    end
 end)
 
-if not success or not Rayfield then
-    warn("cnx mta3ek 5ayba")
-    return
-end
-
+-- [ Rayfield UI Library ]
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
-   Name = "ICE SCRIPT",
-   LoadingTitle = "Mar7ba BIK",
-   LoadingSubtitle = "NEW UPDATE V2",
-   ConfigurationSaving = { Enabled = false },
-   KeySystem = false,
+   Name = "Zodiak Hub|BY ICE",
+   LoadingTitle = "Stana chwy",
+   LoadingSubtitle = "zid istana 3asba",
+   ConfigurationSaving = { Enabled = true, FolderName = "AV8Hub" },
    Theme = "Default" 
 })
 
--------------------------------------------------------------------
--- TAB 1: TROLL HUB
--------------------------------------------------------------------
-local MainTab = Window:CreateTab("TAF3IL", 4483362458)
+local function notify(title, content)
+    Rayfield:Notify({Title = title, Content = content, Duration = 3})
+end
 
-local function getTargetPlayer()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            if string.lower(string.sub(player.Name, 1, #targetName)) == string.lower(targetName) then
-                return player
+-- ═══════════════════════════════════════
+-- TAB 1: CONTROL (TAF3IL)
+-- ═══════════════════════════════════════
+local Tab1 = Window:CreateTab("Taf3il", 4483362458)
+
+Tab1:CreateInput({
+   Name = "Hot ismo hna",
+   PlaceholderText = "Type Name...",
+   Callback = function(text)
+        local searchText = text:lower()
+        if searchText == "" then return end
+        local found = false
+        for _, p in pairs(Players:GetPlayers()) do
+            if (p.Name:lower():find(searchText) or p.DisplayName:lower():find(searchText)) and p ~= lp then
+                bangTarget = p
+                found = true
+                notify("Target Set", "he4a") 
+                break
+            end
+        end
+        if not found then
+            bangTarget = nil
+            notify("Error", "Player not found")
+        end
+   end,
+})
+
+Tab1:CreateToggle({
+   Name = "NIKOOOO",
+   CurrentValue = false,
+   Callback = function(v)
+      isTrolling = v
+      if v and not bangTarget then notify("ICE V1", "Maw 7ot ismo se3a ya bhim") isTrolling = false return end
+      if not v and lp.Character then 
+          lp.Character.Humanoid.Sit = false 
+          lp.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0,0,0)
+      end
+   end,
+})
+
+Tab1:CreateToggle({
+   Name = "Sex 1",
+   CurrentValue = false,
+   Callback = function(v)
+      if v then
+          if not bangTarget then notify("ICE V1", "ti 7ot ismo msatek") mode1Enabled = false return end
+          mode1Enabled, mode2Enabled = true, false
+      else
+          mode1Enabled = false
+          if lp.Character then lp.Character.Humanoid.Sit = false end
+      end
+   end,
+})
+
+Tab1:CreateToggle({
+   Name = "Sex 2",
+   CurrentValue = false,
+   Callback = function(v)
+      if v then
+          if not bangTarget then notify("ICE V1", "TI 7OT ISMO YA ZB") mode2Enabled = false return end
+          mode2Enabled, mode1Enabled = true, false
+      else
+          mode2Enabled = false
+          if lp.Character then 
+              lp.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0,0,0)
+          end
+      end
+   end,
+})
+
+-- ═══════════════════════════════════════
+-- TAB 2: CHOUF
+-- ═══════════════════════════════════════
+local Tab2 = Window:CreateTab("Chouf", 4483362458)
+Tab2:CreateToggle({
+    Name = "Spectate Target",
+    CurrentValue = false,
+    Callback = function(v)
+        if v and bangTarget and bangTarget.Character then
+            Workspace.CurrentCamera.CameraSubject = bangTarget.Character:FindFirstChild("Humanoid")
+        else
+            Workspace.CurrentCamera.CameraSubject = lp.Character:FindFirstChild("Humanoid")
+        end
+    end
+})
+
+-- ═══════════════════════════════════════
+-- TAB 4: PROTECTION (VOID CONTROL)
+-- ═══════════════════════════════════════
+local Tab4 = Window:CreateTab("7imaya", 4483362458)
+
+Tab4:CreateToggle({
+    Name = "Anti-Bang (Void Hide)",
+    CurrentValue = false,
+    Callback = function(v)
+        antiBangActive = v
+        local root = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+        if v and root then 
+            root.CFrame = CFrame.new(root.Position.X, -500, root.Position.Z)
+        end
+    end
+})
+
+Tab4:CreateToggle({ 
+    Name = "Anti-Void Control", 
+    CurrentValue = false, 
+    Callback = function(v) 
+        antiVoidActive = v 
+        local root = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+        
+        if not v and root then
+            -- ON DISABLE: Return to last known ground position
+            root.CFrame = lastCheckpoint
+            root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+            notify("Anti-Void", "Returned to Safety")
+        elseif v and root then
+            notify("Anti-Void", "Staying in Void")
+        end
+    end 
+})
+
+Tab4:CreateToggle({ Name = "Anti-Fling", CurrentValue = false, Callback = function(v) antiFlingActive = v end })
+Tab4:CreateToggle({ 
+    Name = "Anti-AFK", 
+    CurrentValue = false, 
+    Callback = function(v) 
+        antiAfkActive = v 
+    end 
+})
+
+-- ═══════════════════════════════════════
+-- TAB 5: Music 🎵
+-- ═══════════════════════════════════════
+local Tab5 = Window:CreateTab("الأغاني 🎵")
+local function play(id) 
+    pcall(function() 
+        local RE = ReplicatedStorage.RE:FindFirstChild("1NoMoto1rVehicle1s") 
+        if RE then
+            RE:FireServer("SkateBoard") 
+            task.wait(0.2) 
+            RE:FireServer("PickingScooterMusicText", tostring(id)) 
+        end
+    end) 
+end
+
+Tab5:CreateButton({ Name = "brazil", Callback = function() play(134777213252067) end })
+Tab5:CreateButton({ Name = "8oneya 1", Callback = function() play(110919391228823) end })
+Tab5:CreateButton({ Name = "8oneya 2", Callback = function() play(139777823649977) end })
+Tab5:CreateButton({ Name = "8oneya 3", Callback = function() play(140664302903953) end })
+Tab5:CreateButton({ Name = "8oneya 4", Callback = function() play(85871550851299) end })
+Tab5:CreateButton({ Name = "8oneya 5", Callback = function() play(136221009150327) end })
+Tab5:CreateButton({ Name = "8oneya 6", Callback = function() play(116625957997272) end })
+Tab5:CreateButton({ Name = "8oneya 7", Callback = function() play(140709876805704) end })
+Tab5:CreateButton({ Name = "8oneya 8", Callback = function() play(137512003540099) end })
+Tab5:CreateButton({ Name = "8oneya 9", Callback = function() play(132470016945824) end })
+Tab5:CreateButton({ Name = "8oneya 10", Callback = function() play(130467285446008) end })
+
+-- ═══════════════════════════════════════
+-- Heartbeat Update Loop
+-- ═══════════════════════════════════════
+RunService.Heartbeat:Connect(function()
+    local char = lp.Character
+    if not char then return end
+    
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChild("Humanoid")
+    if not root or not hum then return end
+    
+    -- Trolling & Animation logic
+    if (isTrolling or mode1Enabled or mode2Enabled) and bangTarget and bangTarget.Character then
+        local targetRoot = bangTarget.Character:FindFirstChild("HumanoidRootPart")
+        if targetRoot then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = false end
+            end
+            root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+
+            if mode1Enabled then
+                hum.Sit = true
+                local move = math.sin(tick() * 20) * 1.2
+                root.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.2 + move)
+            elseif mode2Enabled then
+                hum.Sit = false
+                local move = math.sin(tick() * 20) * 1.2
+                root.CFrame = targetRoot.CFrame * CFrame.new(0, 0, -1.2 - move) * CFrame.Angles(0, math.rad(180), 0)
+            elseif isTrolling then
+                hum.Sit = true
+                root.CFrame = targetRoot.CFrame * CFrame.new(0, 0, -1) * CFrame.Angles(math.rad(math.random(-180,180)), math.rad(math.random(-180,180)), 0)
+                root.AssemblyAngularVelocity = Vector3.new(0, 800, 0)
+            end
+        end
+    else
+        -- Only restore collision if not in hidden mode
+        if not antiBangActive then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = true end
             end
         end
     end
-    return nil
+
+    -- ANTI-VOID SYSTEM
+    if antiVoidActive then
+        -- If player falls below threshold, hold them at -100 height
+        if root.Position.Y < -80 then
+            root.CFrame = CFrame.new(root.Position.X, -100, root.Position.Z)
+            root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        end
+    else
+        -- Update safe ground position while the toggle is OFF
+        if root.Position.Y > 0 then
+            lastCheckpoint = root.CFrame
+        end
+    end
+end)
+
+-- Anti-AFK Service
+lp.Idled:Connect(function()
+    if antiAfkActive then
+        game:GetService("VirtualUser"):Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        game:GetService("VirtualUser"):Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+    end
+end)
+
+-- Startup Whitelist Logic
+if lp.UserId == 4945789998 then
+    Rayfield:Notify({Title = "Welcome!", Content = "Ahla Youssef 💥 !", Duration = 7})
+elseif lp.UserId == 10266393139 then
+    Rayfield:Notify({Title = "ترحيب خاص", Content = "المحساد المؤسس دخل", Duration = 7})
+elseif lp.UserId == 4728172481 then
+    Rayfield:Notify({Title = "Welcome!", Content = "Hi owner", Duration = 5})
 end
 
-MainTab:CreateInput({
-   Name = "Hna 7ot ismo",
-   PlaceholderText = "Hna",
-   Callback = function(Text) targetName = Text end,
-})
+local Tab6 = Window:CreateTab("Credits")
+Tab6:CreateParagraph({Title = "BY ICE", Content = "Created by ICE and YOUSSF"})
 
-MainTab:CreateSlider({
-   Name = "Sor3a",
-   Range = {16, 250},
-   Increment = 1,
-   CurrentValue = 16,
-   Callback = function(V) 
-       pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = V end) 
-   end,
-})
-
-MainTab:CreateSlider({
-   Name = "Tangiz",
-   Range = {50, 500},
-   Increment = 1,
-   CurrentValue = 50,
-   Callback = function(V) 
-       pcall(function() 
-           LocalPlayer.Character.Humanoid.UseJumpPower = true 
-           LocalPlayer.Character.Humanoid.JumpPower = V 
-       end) 
-   end,
-})
-
-MainTab:CreateSlider({
-   Name = "El 9owa mta3 taf3il",
-   Range = {1, 50},
-   Increment = 1,
-   CurrentValue = 5,
-   Callback = function(V) glitchIntensity = V end,
-})
-
-MainTab:CreateToggle({
-   Name = "FLING",
-   CurrentValue = false,
-   Callback = function(Value) flingEnabled = Value end,
-})
-
-MainTab:CreateToggle({
-   Name = "tnjm tchofo hna",
-   CurrentValue = false,
-   Callback = function(Value)
-      viewingPlayer = Value
-      local cam = Workspace.CurrentCamera
-      if viewingPlayer then
-          local target = getTargetPlayer()
-          if target and target.Character then cam.CameraSubject = target.Character:FindFirstChild("Humanoid") end
-      else
-          pcall(function() cam.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid") end)
-      end
-   end,
-})
-
-MainTab:CreateToggle({
-   Name = "NIKOOO!!",
-   CurrentValue = false,
-   Callback = function(Value)
-      isTrolling = Value
-      local char = LocalPlayer.Character
-      local root = char and char:FindFirstChild("HumanoidRootPart")
-      local hum = char and char:FindFirstChild("Humanoid")
-
-      if isTrolling then
-          Rayfield:Notify({Title = "ICE V1", Content = "NIKLO OMO", Duration = 3})
-          if root then lastCheckpoint = root.CFrame end
-          if hum then hum.Sit = true end
-          
-          midBangThread = task.delay(math.random(60, 180), function()
-              if isTrolling then Rayfield:Notify({Title = "ICE V1", Content = "Mat5rjch Rak rajel", Duration = 4}) end
-          end)
-          
-          loopConnection = RunService.Heartbeat:Connect(function()
-              if not isTrolling then return end
-              local target = getTargetPlayer()
-              
-              if not target then
-                  isTrolling = false
-                  if loopConnection then loopConnection:Disconnect() end
-                  if root and lastCheckpoint then root.CFrame = lastCheckpoint end
-                  Rayfield:Notify({Title = "Target Left", Content = "Haw 5raj Mala 9ahba", Duration = 5})
-                  return
-              end
-
-              if target.Character and target.Character:FindFirstChild("Head") and root then
-                  for _, v in pairs(char:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
-                  root.CFrame = target.Character.Head.CFrame * CFrame.new(0, 0, -1.2) * CFrame.Angles(math.rad(math.random(-360,360)), math.rad(math.random(-360,360)), 0)
-                  if flingEnabled then root.AssemblyAngularVelocity = Vector3.new(0, 50000, 0) end
-                  if hum and not hum.Sit then hum.Sit = true end
-              end
-          end)
-      else
-          if loopConnection then loopConnection:Disconnect() end
-          if midBangThread then task.cancel(midBangThread) end 
-          if getTargetPlayer() then Rayfield:Notify({Title = "ICE V1", Content = "ya 5awaf 3leh 9asit 3lih?", Duration = 4}) end
-          if root then 
-              root.AssemblyAngularVelocity = Vector3.new(0,0,0) 
-              if lastCheckpoint then root.CFrame = lastCheckpoint end 
-          end
-          if hum then hum.Sit = false end
-      end
-   end,
-})
-
--------------------------------------------------------------------
--- TAB 2: DEFENSE
--------------------------------------------------------------------
-local DefenseTab = Window:CreateTab("7imaya", 4483362458)
-
-DefenseTab:CreateToggle({
-   Name = "Anti-Sit (Improved)",
-   CurrentValue = false,
-   Callback = function(Value)
-      if Value then
-          antiSitConnection = RunService.Heartbeat:Connect(function()
-              if not isTrolling and LocalPlayer.Character then
-                  local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
-                  if hum and hum.Sit then
-                      hum.Sit = false
-                      for _, v in pairs(LocalPlayer.Character:GetDescendants()) do if v:IsA("SeatWeld") or v.Name == "SeatWeld" then v:Destroy() end end
-                      LocalPlayer.Character.HumanoidRootPart.CFrame *= CFrame.new(0, 0.5, 0)
-                  end
-              end
-          end)
-      else
-          if antiSitConnection then antiSitConnection:Disconnect() end
-      end
-   end,
-})
-
-DefenseTab:CreateToggle({
-   Name = "Anti-Bang (Hide in Void)",
-   CurrentValue = false,
-   Callback = function(Value)
-      local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-      if Value and root then
-          antiBangCheckpoint = root.CFrame
-          root.CFrame = CFrame.new(0, 5000, 0)
-          root.Anchored = true
-      elseif root and antiBangCheckpoint then
-          root.Anchored = false
-          root.CFrame = antiBangCheckpoint
-      end
-   end,
-})
-
--------------------------------------------------------------------
--- TAB 3: PLAYER INFO
--------------------------------------------------------------------
-local InfoTab = Window:CreateTab("info", 4483362458)
-InfoTab:CreateLabel("User: " .. LocalPlayer.Name)
-local ServerLabel = InfoTab:CreateLabel("Players: " .. #Players:GetPlayers())
-local UptimeLabel = InfoTab:CreateLabel("Uptime: 0s")
-
-task.spawn(function()
-    while task.wait(1) do
-        ServerLabel:Set("Players: " .. #Players:GetPlayers())
-        UptimeLabel:Set("Uptime: " .. math.floor(os.time() - startTime) .. "s")
-    end
-end)
-
-InfoTab:CreateToggle({
-   Name = "Anti-AFK",
-   CurrentValue = false,
-   Callback = function(V) antiAfkEnabled = V end,
-})
-
-LocalPlayer.Idled:Connect(function()
-    if antiAfkEnabled then
-        VirtualUser:Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        VirtualUser:Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
-    end
-end)
-
--------------------------------------------------------------------
--- INITIALIZATION BLOCK
--------------------------------------------------------------------
-task.spawn(function()
-    -- 1. HEAL & RP IDENTITY
-    pcall(function()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.Health = 100
-        end
-        task.wait(0.1)
-        
-        local RE = ReplicatedStorage:FindFirstChild("RE")
-        local RPEvent = RE and RE:FindFirstChild("1RPNam1eTex1t")
-        
-        if RPEvent then
-            RPEvent:FireServer("RolePlayName", "CLAN ZODIAK")
-            task.wait(0.1)
-            RPEvent:FireServer("RolePlayBio", "BY ICE")
-        end
-    end)
-    
-    task.wait(0.5)
-
-    -- 2. CHAT SPAM
-    for i = 1, 5 do
-        local msg = "CLAN ZODIAK JOINED THE SERVER!"
-        if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-            local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-            if channel then channel:SendAsync(msg) end
-        elseif ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") then
-            ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
-        end
-        task.wait(0.2)
-    end
-end)
-
-Rayfield:Notify({Title = "ICE V1 BANG", Content = "Zodiak Master Loaded!", Duration = 4})
+notify("ZODIAK HUB")
